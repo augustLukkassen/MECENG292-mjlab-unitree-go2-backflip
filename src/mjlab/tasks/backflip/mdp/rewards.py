@@ -160,26 +160,39 @@ def track_pitch_velocity(
 
 def simple_pitch_velocity(
   env: ManagerBasedRlEnv,
-  min_height: float = 0.32,  # Just above standing height (~0.3m)
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Reward negative Y angular velocity (nose UP for backflip).
   
-  Only active when robot is slightly above standing height.
+  Always active - no height gate. Let robot learn to rotate anytime.
   """
   asset: Entity = env.scene[asset_cfg.name]
   
   # World Y angular velocity - negative = nose UP
   pitch_vel = asset.data.root_link_ang_vel_w[:, 1]
   
-  # Only reward rotation when slightly lifted (above min_height)
-  height = asset.data.root_link_pos_w[:, 2]
-  in_air = (height > min_height).float()
+  # Reward negative velocity (nose UP), no height gate
+  return torch.clamp(-pitch_vel, min=0.0, max=10.0)
+
+
+def vertical_velocity(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Reward upward velocity during jump phase (phase < 0.5)."""
+  asset: Entity = env.scene[asset_cfg.name]
+  command = env.command_manager.get_command(command_name)
+  phase = command[:, 0]
   
-  # Reward negative velocity (nose UP)
-  reward = torch.clamp(-pitch_vel, min=0.0, max=10.0)
+  # Only reward upward velocity during first half (jump phase)
+  jump_phase = (phase < 0.5).float()
   
-  return reward * in_air
+  # Vertical velocity (positive = up)
+  vert_vel = asset.data.root_link_lin_vel_w[:, 2]
+  
+  # Reward upward velocity
+  return torch.clamp(vert_vel, min=0.0, max=5.0) * jump_phase
 
 
 def penalize_yaw_roll(
