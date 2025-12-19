@@ -218,6 +218,7 @@ def vertical_velocity(
   """Reward upward velocity during jump phase (phase < 0.5)."""
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
+  assert command is not None
   phase = command[:, 0]
   
   # Only reward upward velocity during first half (jump phase)

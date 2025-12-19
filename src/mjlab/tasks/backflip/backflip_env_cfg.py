@@ -273,11 +273,21 @@ def create_backflip_env_cfg(
       weight=-3.0,
       params={"pitch_axis": 1},
     ),
-    # 5. STRONGLY encourage upward velocity - JUMP FIRST!
+    # 5. Encourage upward velocity
     "vertical_velocity": RewardTermCfg(
       func=mdp.vertical_velocity,
-      weight=8.0,  # Doubled! Jump is essential
+      weight=6.0,
       params={"command_name": "backflip"},
+    ),
+    # 6. Reward feet being airborne!
+    "feet_air_time": RewardTermCfg(
+      func=mdp.feet_air_time,
+      weight=4.0,
+      params={
+        "sensor_name": "feet_ground_contact",
+        "threshold_min": 0.0,  # Any air time counts
+        "threshold_max": 2.0,  # Up to 2 seconds
+      },
     ),
     # 3. Land upright (removed duplicate)
     "landing_upright": RewardTermCfg(
