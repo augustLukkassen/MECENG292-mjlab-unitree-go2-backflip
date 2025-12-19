@@ -45,7 +45,7 @@ ROTOR_INERTIA = 0.000111842
 
 # Gearbox.
 HIP_GEAR_RATIO = 6
-KNEE_GEAR_RATIO = HIP_GEAR_RATIO * 1.5
+KNEE_GEAR_RATIO = HIP_GEAR_RATIO * 2
 
 HIP_ACTUATOR = ElectricActuator(
   reflected_inertia=reflected_inertia(ROTOR_INERTIA, HIP_GEAR_RATIO),

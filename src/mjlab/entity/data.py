@@ -11,6 +11,7 @@ from mjlab.third_party.isaaclab.isaaclab.utils.math import (
   quat_apply_inverse,
   quat_from_matrix,
   quat_mul,
+  euler_xyz_from_quat,
 )
 
 if TYPE_CHECKING:
