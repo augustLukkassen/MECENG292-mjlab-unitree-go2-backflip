@@ -258,24 +258,24 @@ def create_backflip_env_cfg(
       params={"std": math.sqrt(0.25),
               "command_name": "backflip"},  
     ),
-    # NEW: Reward for actually spinning - this is the key reward!
-    # axis=0 was roll, axis=1 was yaw, so axis=2 must be pitch!
+    # Backflip = pitch = Y-axis = index 1
+    # Robot was cheating by rolling onto side first, so add strong roll penalty
     "track_pitch_velocity": RewardTermCfg(
       func=mdp.track_pitch_velocity,
-      weight=3.0,  # High weight to encourage rotation
+      weight=3.0,
       params={
-        "target_velocity": -4.2,  # -2*pi/1.5 rad/s for backflip in 1.5s
-        "std": 2.0,  # Generous std for exploration
+        "target_velocity": -4.2,  # Backward rotation
+        "std": 2.0,
         "command_name": "backflip",
-        "axis": 2,  # Z-axis is pitch for this robot!
+        "axis": 1,  # Y-axis = pitch = backflip
       },
     ),
-    # Penalize yaw/roll to prevent spinning in wrong direction
+    # STRONG penalty on roll/yaw to prevent cheating
     "penalize_yaw_roll": RewardTermCfg(
       func=mdp.penalize_yaw_roll,
-      weight=-0.5,  # Negative = penalty
+      weight=-2.0,  # Increased from -0.5 to prevent roll cheating
       params={
-        "pitch_axis": 2,  # Same as above - the axis we WANT to spin around
+        "pitch_axis": 1,  # Allow pitch (Y), penalize roll (X) and yaw (Z)
       },
     ),
     "landing_upright": RewardTermCfg(
