@@ -66,12 +66,19 @@ def track_phase_height(
   command_name: str,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-  """Reward for tracking the commanded base height."""
+  """Reward for tracking the commanded base height.
+  
+  Only active during phase 0-0.8 (jump and flip).
+  Disabled during phase 0.8-1.0 to avoid rewarding standing still.
+  """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
   assert command is not None, f"Command '{command_name}' not found."
 
   phase = command[:, 0]
+
+  # Only active during first 80% of phase
+  active = (phase < 0.8).float()
 
   base_height = 0.3
   jump_height = 0.4
@@ -80,7 +87,7 @@ def track_phase_height(
   actual = asset.data.root_link_pos_w[:, 2]
   height_error = torch.square(actual - target_height)
 
-  return torch.exp(-height_error / std**2)
+  return torch.exp(-height_error / std**2) * active
 
 def track_phase_pitch(
   env: ManagerBasedRlEnv,
