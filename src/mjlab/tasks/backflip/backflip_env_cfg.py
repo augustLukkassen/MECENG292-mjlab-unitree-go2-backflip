@@ -265,7 +265,7 @@ def create_backflip_env_cfg(
       func=mdp.track_pitch_velocity,
       weight=5.0,  # Increased to encourage rotation
       params={
-        "target_velocity": 4.2,  # POSITIVE = nose UP first (backflip)
+        "target_velocity": -4.2,  # Try NEGATIVE for backflip
         "std": 3.0,  # More forgiving - any rotation is good initially
         "command_name": "backflip",
         "axis": 1,  # World Y-axis = pitch
@@ -277,6 +277,14 @@ def create_backflip_env_cfg(
       weight=-0.3,  # Reduced - let robot explore more
       params={
         "pitch_axis": 1,
+      },
+    ),
+    # Penalty for pitching in WRONG direction (nose down)
+    "penalize_wrong_pitch": RewardTermCfg(
+      func=mdp.penalize_wrong_pitch,
+      weight=-3.0,  # Strong penalty for wrong direction
+      params={
+        "axis": 1,
       },
     ),
     "landing_upright": RewardTermCfg(

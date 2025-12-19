@@ -137,11 +137,7 @@ def track_pitch_velocity(
 ) -> torch.Tensor:
   """Reward for spinning at target pitch velocity (backward flip).
   
-  Uses WORLD-FRAME angular velocity so the backflip axis is always
-  the world Y-axis, regardless of robot orientation.
-  
-  For a backflip completing in 1.5 seconds:
-    target_velocity = -2*pi / 1.5 ≈ -4.2 rad/s (negative = backward rotation)
+  Uses WORLD-FRAME angular velocity. Gives zero reward for wrong direction.
   """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
@@ -152,12 +148,22 @@ def track_pitch_velocity(
   # Only reward velocity during the flip, not during landing
   phase_weight = torch.clamp(1.0 - (phase - 0.7) / 0.3, 0.0, 1.0)
   
-  # Use WORLD-FRAME angular velocity (not body frame!)
-  # This way, pitch is always around world Y, regardless of robot orientation
+  # Use WORLD-FRAME angular velocity
   actual_vel = asset.data.root_link_ang_vel_w[:, axis]
   
+  # Gaussian reward for matching target velocity
   error = torch.square(actual_vel - target_velocity)
-  return phase_weight * torch.exp(-error / std**2)
+  reward = torch.exp(-error / std**2)
+  
+  # Zero out reward if rotating in wrong direction
+  if target_velocity > 0:
+    # Positive target: zero reward for negative velocity
+    reward = reward * (actual_vel > 0).float()
+  else:
+    # Negative target (backflip for this robot): zero reward for positive velocity
+    reward = reward * (actual_vel < 0).float()
+  
+  return phase_weight * reward
 
 
 def penalize_yaw_roll(
@@ -177,6 +183,24 @@ def penalize_yaw_roll(
       penalty += torch.square(ang_vel[:, i])
   
   return penalty
+
+
+def penalize_wrong_pitch(
+  env: ManagerBasedRlEnv,
+  axis: int = 1,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize positive pitch velocity (wrong direction for backflip).
+  
+  For this robot, backflip = NEGATIVE Y rotation.
+  This penalizes any positive pitch velocity.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  pitch_vel = asset.data.root_link_ang_vel_w[:, axis]
+  
+  # Only penalize positive velocity (wrong direction)
+  wrong_direction = torch.clamp(pitch_vel, min=0.0)  # Positive when pitch_vel is positive
+  return torch.square(wrong_direction)
 
 def default_joint_position(
   env,
