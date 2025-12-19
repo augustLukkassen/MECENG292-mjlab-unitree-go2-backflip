@@ -261,11 +261,11 @@ def create_backflip_env_cfg(
       params={"std": 0.5,
               "command_name": "backflip"},
     ),
-    # 3. Pitch velocity - MAIN DRIVER for rotation
+    # 3. Pitch velocity - ONLY after jumping HIGH
     "pitch_velocity": RewardTermCfg(
       func=mdp.simple_pitch_velocity,
-      weight=8.0,  # STRONGEST! Keep spinning one direction
-      params={"min_height": 0.32},
+      weight=8.0,  # Strong rotation
+      params={"min_height": 0.6},  # Must be 0.6m+ before rotation reward!
     ),
     # 4. Penalize yaw and roll (wrong axes!)
     "penalize_yaw_roll": RewardTermCfg(
