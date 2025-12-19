@@ -52,4 +52,5 @@ class BackflipCommandCfg(CommandTermCfg):
     """Configuration for backflip command generator."""
     asset_name: str
     phase_duration: float = 1.5  # seconds for one backflip
+    resampling_time_range: tuple[float, float] = (0.0, 0.0)  # No resampling needed, phase is continuous
     class_type: type[CommandTerm] = BackflipCommand
