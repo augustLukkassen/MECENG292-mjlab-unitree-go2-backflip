@@ -246,25 +246,32 @@ def create_backflip_env_cfg(
     # TODO(c): add objective reward terms.
     # Hint: track commanded linear and angular velocity.
  
-    # SIMPLE BACKFLIP REWARDS:
-    # 1. Jump up HIGH (tighter std to force actual jumping)
+    # BACKFLIP REWARDS:
+    # 1. Jump up HIGH
     "track_phase_height": RewardTermCfg(
       func=mdp.track_phase_height,
-      weight=2.0,  # Reduced slightly
+      weight=2.0,
       params={"std": 0.15,
               "command_name": "backflip"},  
     ),
-    # 2. Rotate backward (nose UP) - ALWAYS ACTIVE now
-    "pitch_velocity": RewardTermCfg(
-      func=mdp.simple_pitch_velocity,
-      weight=5.0,  # Increased - main objective!
-      params={},  # No height gate
+    # 2. Track cumulative rotation (target: 0 -> 2π over phase)
+    "track_phase_pitch": RewardTermCfg(
+      func=mdp.track_phase_pitch,
+      weight=3.0,  # Reward reaching target angle at each phase
+      params={"std": 0.5,
+              "command_name": "backflip"},
     ),
     # 3. Encourage upward velocity during jump phase
     "vertical_velocity": RewardTermCfg(
       func=mdp.vertical_velocity,
-      weight=3.0,
+      weight=2.0,
       params={"command_name": "backflip"},
+    ),
+    # 4. Small bonus for pitch velocity (exploration)
+    "pitch_velocity": RewardTermCfg(
+      func=mdp.simple_pitch_velocity,
+      weight=1.0,  # Reduced - angle tracking is main signal now
+      params={},
     ),
     # 3. Land upright (removed duplicate)
     "landing_upright": RewardTermCfg(
