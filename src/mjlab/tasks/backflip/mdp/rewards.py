@@ -132,6 +132,7 @@ def track_pitch_velocity(
   target_velocity: float,
   std: float,
   command_name: str,
+  axis: int = 1,  # 0=roll(X), 1=pitch(Y), 2=yaw(Z) - try different values!
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Reward for spinning at target pitch velocity (backward flip).
@@ -150,11 +151,29 @@ def track_pitch_velocity(
   # Only reward velocity during the flip, not during landing
   phase_weight = torch.clamp(1.0 - (phase - 0.7) / 0.3, 0.0, 1.0)
   
-  # Pitch velocity is angular velocity around Y axis (index 1) in body frame
-  actual_pitch_vel = asset.data.root_link_ang_vel_b[:, 1]
+  # Get angular velocity around the specified axis
+  actual_vel = asset.data.root_link_ang_vel_b[:, axis]
   
-  error = torch.square(actual_pitch_vel - target_velocity)
+  error = torch.square(actual_vel - target_velocity)
   return phase_weight * torch.exp(-error / std**2)
+
+
+def penalize_yaw_roll(
+  env: ManagerBasedRlEnv,
+  pitch_axis: int = 1,  # Which axis is the backflip axis (exclude from penalty)
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize rotation around non-pitch axes (prevent yaw/roll spinning)."""
+  asset: Entity = env.scene[asset_cfg.name]
+  ang_vel = asset.data.root_link_ang_vel_b  # [B, 3]
+  
+  # Penalize all axes except the pitch axis
+  penalty = torch.zeros(ang_vel.shape[0], device=ang_vel.device)
+  for i in range(3):
+    if i != pitch_axis:
+      penalty += torch.square(ang_vel[:, i])
+  
+  return penalty
 
 def default_joint_position(
   env,

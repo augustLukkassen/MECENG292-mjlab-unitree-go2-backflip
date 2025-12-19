@@ -259,6 +259,7 @@ def create_backflip_env_cfg(
               "command_name": "backflip"},  
     ),
     # NEW: Reward for actually spinning - this is the key reward!
+    # Try axis=0 (X/roll) if axis=1 (Y/pitch) causes yaw spinning
     "track_pitch_velocity": RewardTermCfg(
       func=mdp.track_pitch_velocity,
       weight=3.0,  # High weight to encourage rotation
@@ -266,6 +267,15 @@ def create_backflip_env_cfg(
         "target_velocity": -4.2,  # -2*pi/1.5 rad/s for backflip in 1.5s
         "std": 2.0,  # Generous std for exploration
         "command_name": "backflip",
+        "axis": 0,  # Try 0 (X-axis) - change to 1 if this is wrong
+      },
+    ),
+    # Penalize yaw/roll to prevent spinning in wrong direction
+    "penalize_yaw_roll": RewardTermCfg(
+      func=mdp.penalize_yaw_roll,
+      weight=-0.5,  # Negative = penalty
+      params={
+        "pitch_axis": 0,  # Same as above - the axis we WANT to spin around
       },
     ),
     "landing_upright": RewardTermCfg(
