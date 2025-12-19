@@ -137,7 +137,7 @@ def track_pitch_velocity(
 ) -> torch.Tensor:
   """Reward for spinning at target pitch velocity (backward flip).
   
-  Uses WORLD-FRAME angular velocity. Gives zero reward for wrong direction.
+  Uses WORLD-FRAME angular velocity. Simple Gaussian reward.
   """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
@@ -151,17 +151,9 @@ def track_pitch_velocity(
   # Use WORLD-FRAME angular velocity
   actual_vel = asset.data.root_link_ang_vel_w[:, axis]
   
-  # Gaussian reward for matching target velocity
+  # Simple Gaussian reward - let robot explore both directions
   error = torch.square(actual_vel - target_velocity)
   reward = torch.exp(-error / std**2)
-  
-  # Zero out reward if rotating in wrong direction
-  if target_velocity > 0:
-    # Positive target: zero reward for negative velocity
-    reward = reward * (actual_vel > 0).float()
-  else:
-    # Negative target (backflip for this robot): zero reward for positive velocity
-    reward = reward * (actual_vel < 0).float()
   
   return phase_weight * reward
 

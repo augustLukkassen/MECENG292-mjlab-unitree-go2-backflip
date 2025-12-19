@@ -274,19 +274,12 @@ def create_backflip_env_cfg(
     # Light penalty on roll/yaw - don't freeze the robot
     "penalize_yaw_roll": RewardTermCfg(
       func=mdp.penalize_yaw_roll,
-      weight=-0.3,  # Reduced - let robot explore more
+      weight=-0.1,  # Very light - let robot explore
       params={
         "pitch_axis": 1,
       },
     ),
-    # Penalty for pitching in WRONG direction (nose down)
-    "penalize_wrong_pitch": RewardTermCfg(
-      func=mdp.penalize_wrong_pitch,
-      weight=-3.0,  # Strong penalty for wrong direction
-      params={
-        "axis": 1,
-      },
-    ),
+    # REMOVED: penalize_wrong_pitch was too restrictive
     "landing_upright": RewardTermCfg(
       func=mdp.landing_upright,
       weight=2.0,  # Increased for good landings
