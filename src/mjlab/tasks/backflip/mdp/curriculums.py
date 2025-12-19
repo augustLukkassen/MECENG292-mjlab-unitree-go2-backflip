@@ -7,7 +7,8 @@ import torch
 from mjlab.entity import Entity
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 
-from .velocity_command import UniformVelocityCommandCfg
+# Note: BackflipCommand doesn't use velocity ranges, so commands_vel curriculum is not used
+from .backflip_command import BackflipCommandCfg
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
