@@ -103,6 +103,7 @@ def track_phase_pitch(
   - Back to upright: proj_grav_z = -1
   
   Target: -cos(phase * 2π) follows this pattern exactly.
+  Only active during phase < 0.8 to avoid rewarding standing still.
   """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
@@ -110,10 +111,13 @@ def track_phase_pitch(
 
   phase = command[:, 0]
   
+  # Only active during first 80% of phase (avoid rewarding standing still at end)
+  active = (phase < 0.8).float()
+  
   # Target Z component of projected gravity
   # phase=0: -cos(0) = -1 (upright)
   # phase=0.5: -cos(π) = +1 (inverted)
-  # phase=1: -cos(2π) = -1 (upright)
+  # phase=0.8: -cos(1.6π) ≈ -0.81 (almost upright again)
   target_grav_z = -torch.cos(phase * 2 * math.pi)
   
   # Actual projected gravity Z component
@@ -124,7 +128,7 @@ def track_phase_pitch(
   actual_grav_z = actual_grav_z / torch.clamp(grav_norm, min=0.1)
   
   error = torch.square(target_grav_z - actual_grav_z)
-  return torch.exp(-error / std**2)
+  return torch.exp(-error / std**2) * active
 
 def landing_upright(
   env: ManagerBasedRlEnv,
@@ -185,19 +189,25 @@ def track_pitch_velocity(
 
 def simple_pitch_velocity(
   env: ManagerBasedRlEnv,
+  min_height: float = 0.5,  # Must be airborne to get rotation reward!
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Reward negative Y angular velocity (nose UP for backflip).
   
-  Always active - no height gate. Let robot learn to rotate anytime.
+  Only rewards rotation when robot is above min_height (must jump first!).
+  This prevents the robot from just tipping over on the ground.
   """
   asset: Entity = env.scene[asset_cfg.name]
+  
+  # Height gate - must be airborne to get rotation reward
+  height = asset.data.root_link_pos_w[:, 2]
+  height_gate = (height > min_height).float()
   
   # World Y angular velocity - negative = nose UP
   pitch_vel = asset.data.root_link_ang_vel_w[:, 1]
   
-  # Reward negative velocity (nose UP), no height gate
-  return torch.clamp(-pitch_vel, min=0.0, max=10.0)
+  # Reward negative velocity (nose UP), only when airborne
+  return torch.clamp(-pitch_vel, min=0.0, max=10.0) * height_gate
 
 
 def vertical_velocity(
