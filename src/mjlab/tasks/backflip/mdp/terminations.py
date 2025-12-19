@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from mjlab.entity import Entity
 from mjlab.sensor import ContactSensor
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 

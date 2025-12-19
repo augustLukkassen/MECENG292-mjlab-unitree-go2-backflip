@@ -248,23 +248,29 @@ def create_backflip_env_cfg(
  
     "track_phase_height": RewardTermCfg(
       func=mdp.track_phase_height,
-      weight=2.0,
+      weight=1.0,  # Reduced weight
       params={"std": math.sqrt(0.25),
               "command_name": "backflip"},  
     ),
     "track_phase_pitch": RewardTermCfg(
       func=mdp.track_phase_pitch,
-      weight=2.0,
+      weight=1.0,  # Reduced weight
       params={"std": math.sqrt(0.25),
               "command_name": "backflip"},  
     ),
-    #"angular_momentum": RewardTermCfg(
-    #  func=mdp.angular_momentum_penalty,
-    #  weight=-0.1,
-    #),
+    # NEW: Reward for actually spinning - this is the key reward!
+    "track_pitch_velocity": RewardTermCfg(
+      func=mdp.track_pitch_velocity,
+      weight=3.0,  # High weight to encourage rotation
+      params={
+        "target_velocity": -4.2,  # -2*pi/1.5 rad/s for backflip in 1.5s
+        "std": 2.0,  # Generous std for exploration
+        "command_name": "backflip",
+      },
+    ),
     "landing_upright": RewardTermCfg(
       func=mdp.landing_upright,
-      weight=1.0,
+      weight=2.0,  # Increased for good landings
       params={"std": math.sqrt(0.2),
               "command_name": "backflip"},  
     ),

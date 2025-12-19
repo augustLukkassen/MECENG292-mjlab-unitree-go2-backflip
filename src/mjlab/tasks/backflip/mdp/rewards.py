@@ -126,6 +126,36 @@ def landing_upright(
   total_error = proj_gravity_error + height_error
   return phase_weight * torch.exp(-total_error / std**2)
 
+
+def track_pitch_velocity(
+  env: ManagerBasedRlEnv,
+  target_velocity: float,
+  std: float,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Reward for spinning at target pitch velocity (backward flip).
+  
+  For a backflip completing in 1.5 seconds:
+    target_velocity = -2*pi / 1.5 ≈ -4.2 rad/s (negative = backward rotation)
+  
+  Only active during the flip phase (phase < 0.8).
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  command = env.command_manager.get_command(command_name)
+  assert command is not None, f"Command '{command_name}' not found."
+  
+  phase = command[:, 0]
+  
+  # Only reward velocity during the flip, not during landing
+  phase_weight = torch.clamp(1.0 - (phase - 0.7) / 0.3, 0.0, 1.0)
+  
+  # Pitch velocity is angular velocity around Y axis (index 1) in body frame
+  actual_pitch_vel = asset.data.root_link_ang_vel_b[:, 1]
+  
+  error = torch.square(actual_pitch_vel - target_velocity)
+  return phase_weight * torch.exp(-error / std**2)
+
 def default_joint_position(
   env,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
