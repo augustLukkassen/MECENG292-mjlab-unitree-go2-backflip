@@ -95,18 +95,36 @@ def track_phase_pitch(
   command_name: str,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-  """Reward for tracking the commanded base pitch."""
+  """Reward for tracking rotation progress using projected gravity.
+  
+  Uses projected gravity Z component which is more robust than Euler angles.
+  - Upright: proj_grav_z = -1
+  - Inverted (half flip): proj_grav_z = +1
+  - Back to upright: proj_grav_z = -1
+  
+  Target: -cos(phase * 2π) follows this pattern exactly.
+  """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
   assert command is not None, f"Command '{command_name}' not found."
 
   phase = command[:, 0]
-  target_pitch = 2 * math.pi * phase
   
-  actual = euler_xyz_from_quat(asset.data.root_link_quat_w, wrap_to_2pi=True)[1]
-  pitch_error = torch.square(target_pitch - actual)
-
-  return torch.exp(-pitch_error / std**2)
+  # Target Z component of projected gravity
+  # phase=0: -cos(0) = -1 (upright)
+  # phase=0.5: -cos(π) = +1 (inverted)
+  # phase=1: -cos(2π) = -1 (upright)
+  target_grav_z = -torch.cos(phase * 2 * math.pi)
+  
+  # Actual projected gravity Z component
+  actual_grav_z = asset.data.projected_gravity_b[:, 2]
+  
+  # Normalize (gravity magnitude should be ~1 but let's be safe)
+  grav_norm = torch.norm(asset.data.projected_gravity_b, dim=-1, keepdim=False)
+  actual_grav_z = actual_grav_z / torch.clamp(grav_norm, min=0.1)
+  
+  error = torch.square(target_grav_z - actual_grav_z)
+  return torch.exp(-error / std**2)
 
 def landing_upright(
   env: ManagerBasedRlEnv,

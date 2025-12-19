@@ -254,22 +254,29 @@ def create_backflip_env_cfg(
       params={"std": 0.15,
               "command_name": "backflip"},  
     ),
-    # 2. Pitch velocity (backward rotation)
+    # 2. Track rotation progress (using projected gravity - robust!)
+    "track_phase_pitch": RewardTermCfg(
+      func=mdp.track_phase_pitch,
+      weight=3.0,
+      params={"std": 0.5,
+              "command_name": "backflip"},
+    ),
+    # 3. Pitch velocity (backward rotation)
     "pitch_velocity": RewardTermCfg(
       func=mdp.simple_pitch_velocity,
-      weight=3.0,
+      weight=2.0,  # Reduced - angle tracking helps guide
       params={},
     ),
-    # 3. STRONGLY penalize yaw and roll (wrong axes!)
+    # 4. Penalize yaw and roll (wrong axes!)
     "penalize_yaw_roll": RewardTermCfg(
       func=mdp.penalize_yaw_roll,
-      weight=-5.0,  # Strong penalty!
-      params={"pitch_axis": 1},  # Don't penalize Y-axis rotation
+      weight=-3.0,
+      params={"pitch_axis": 1},
     ),
-    # 4. Encourage upward velocity during jump phase
+    # 5. Encourage upward velocity during jump phase
     "vertical_velocity": RewardTermCfg(
       func=mdp.vertical_velocity,
-      weight=4.0,  # Increased! Need strong jump to reach 1.2m
+      weight=4.0,
       params={"command_name": "backflip"},
     ),
     # 3. Land upright (removed duplicate)
