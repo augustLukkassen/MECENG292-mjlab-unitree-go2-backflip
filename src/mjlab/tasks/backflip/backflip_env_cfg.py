@@ -126,7 +126,7 @@ def create_backflip_env_cfg(
   commands: dict[str, CommandTermCfg] = {
     "backflip": BackflipCommandCfg(
         asset_name="robot",
-        phase_duration = 1.5,
+        phase_duration = 1.5,  # Keep original timing
     )
 }
 
@@ -257,15 +257,15 @@ def create_backflip_env_cfg(
     # 2. Track rotation progress (using projected gravity - robust!)
     "track_phase_pitch": RewardTermCfg(
       func=mdp.track_phase_pitch,
-      weight=5.0,  # Increased! Guide through full rotation
-      params={"std": 0.5,
+      weight=8.0,  # STRONGEST! Must follow rotation curve
+      params={"std": 0.3,  # Tighter - penalize deviation more
               "command_name": "backflip"},
     ),
     # 3. Pitch velocity - ONLY when airborne (must jump first!)
     "pitch_velocity": RewardTermCfg(
       func=mdp.simple_pitch_velocity,
-      weight=5.0,  # Increased! Rotate faster!
-      params={"min_height": 0.4},  # Lowered - start rotating earlier
+      weight=6.0,  # Strong rotation speed
+      params={"min_height": 0.35},  # Start rotating earlier
     ),
     # 4. Penalize yaw and roll (wrong axes!)
     "penalize_yaw_roll": RewardTermCfg(
@@ -278,16 +278,6 @@ def create_backflip_env_cfg(
       func=mdp.vertical_velocity,
       weight=6.0,
       params={"command_name": "backflip"},
-    ),
-    # 6. Reward feet being airborne!
-    "feet_air_time": RewardTermCfg(
-      func=mdp.feet_air_time,
-      weight=4.0,
-      params={
-        "sensor_name": "feet_ground_contact",
-        "threshold_min": 0.0,  # Any air time counts
-        "threshold_max": 2.0,  # Up to 2 seconds
-      },
     ),
     # 3. Land upright (removed duplicate)
     "landing_upright": RewardTermCfg(
