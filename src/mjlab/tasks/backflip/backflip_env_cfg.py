@@ -246,36 +246,37 @@ def create_backflip_env_cfg(
     # TODO(c): add objective reward terms.
     # Hint: track commanded linear and angular velocity.
  
+    # Height reward - CRUCIAL for jumping!
     "track_phase_height": RewardTermCfg(
       func=mdp.track_phase_height,
-      weight=1.0,  # Reduced weight
+      weight=3.0,  # Increased - must jump first!
       params={"std": math.sqrt(0.25),
               "command_name": "backflip"},  
     ),
+    # Pitch angle tracking (may still be gamed, but helps guide)
     "track_phase_pitch": RewardTermCfg(
       func=mdp.track_phase_pitch,
-      weight=1.0,  # Reduced weight
+      weight=1.0,
       params={"std": math.sqrt(0.25),
               "command_name": "backflip"},  
     ),
-    # Backflip = pitch = Y-axis = index 1
-    # Robot was cheating by rolling onto side first, so add strong roll penalty
+    # Pitch VELOCITY reward - key for actual rotation
     "track_pitch_velocity": RewardTermCfg(
       func=mdp.track_pitch_velocity,
-      weight=3.0,
+      weight=5.0,  # Increased to encourage rotation
       params={
-        "target_velocity": -4.2,  # Backward rotation
-        "std": 2.0,
+        "target_velocity": -4.2,  # Backward rotation (try +4.2 if wrong direction)
+        "std": 3.0,  # More forgiving - any rotation is good initially
         "command_name": "backflip",
-        "axis": 1,  # Y-axis = pitch = backflip
+        "axis": 1,  # World Y-axis = pitch
       },
     ),
-    # STRONG penalty on roll/yaw to prevent cheating
+    # Light penalty on roll/yaw - don't freeze the robot
     "penalize_yaw_roll": RewardTermCfg(
       func=mdp.penalize_yaw_roll,
-      weight=-2.0,  # Increased from -0.5 to prevent roll cheating
+      weight=-0.3,  # Reduced - let robot explore more
       params={
-        "pitch_axis": 1,  # Allow pitch (Y), penalize roll (X) and yaw (Z)
+        "pitch_axis": 1,
       },
     ),
     "landing_upright": RewardTermCfg(
