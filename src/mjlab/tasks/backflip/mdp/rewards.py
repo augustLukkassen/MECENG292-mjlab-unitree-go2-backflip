@@ -158,6 +158,23 @@ def track_pitch_velocity(
   return phase_weight * reward
 
 
+def simple_pitch_velocity(
+  env: ManagerBasedRlEnv,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Simply reward negative Y angular velocity (nose UP for backflip).
+  
+  No fancy Gaussian, no phase weighting - just reward backward rotation.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  # World Y angular velocity - negative = nose UP
+  pitch_vel = asset.data.root_link_ang_vel_w[:, 1]
+  
+  # Reward negative velocity (nose UP), penalize positive (nose DOWN)
+  # Clamp to prevent extreme rewards
+  return torch.clamp(-pitch_vel, min=0.0, max=10.0)
+
+
 def penalize_yaw_roll(
   env: ManagerBasedRlEnv,
   pitch_axis: int = 1,  # Which axis is the backflip axis (exclude from penalty)
