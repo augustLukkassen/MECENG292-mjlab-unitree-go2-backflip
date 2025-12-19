@@ -247,29 +247,23 @@ def create_backflip_env_cfg(
     # Hint: track commanded linear and angular velocity.
  
     # SIMPLE BACKFLIP REWARDS:
-    # 1. Jump up HIGH
+    # 1. Jump up HIGH (tighter std to force actual jumping)
     "track_phase_height": RewardTermCfg(
       func=mdp.track_phase_height,
       weight=3.0,  # Important: must jump first!
-      params={"std": math.sqrt(0.25),
+      params={"std": 0.15,  # Tighter: was 0.5, now 0.15
               "command_name": "backflip"},  
     ),
-    # 2. Rotate backward (nose UP) - ONLY when in the air
+    # 2. Rotate backward (nose UP) - when slightly lifted
     "pitch_velocity": RewardTermCfg(
       func=mdp.simple_pitch_velocity,
       weight=3.0,
-      params={"min_height": 0.4},  # Only reward when above 0.4m (jumping)
+      params={"min_height": 0.32},  # Just above standing height (~0.3m)
     ),
-    # 3. Land upright
+    # 3. Land upright (removed duplicate)
     "landing_upright": RewardTermCfg(
       func=mdp.landing_upright,
       weight=2.0,
-      params={"std": math.sqrt(0.2),
-              "command_name": "backflip"},  
-    ),
-    "landing_upright": RewardTermCfg(
-      func=mdp.landing_upright,
-      weight=2.0,  # Increased for good landings
       params={"std": math.sqrt(0.2),
               "command_name": "backflip"},  
     ),
