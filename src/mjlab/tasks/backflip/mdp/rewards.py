@@ -160,19 +160,26 @@ def track_pitch_velocity(
 
 def simple_pitch_velocity(
   env: ManagerBasedRlEnv,
+  min_height: float = 0.4,  # Only reward when above this height
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-  """Simply reward negative Y angular velocity (nose UP for backflip).
+  """Reward negative Y angular velocity (nose UP for backflip).
   
-  No fancy Gaussian, no phase weighting - just reward backward rotation.
+  Only active when robot is above min_height (in the air).
   """
   asset: Entity = env.scene[asset_cfg.name]
+  
   # World Y angular velocity - negative = nose UP
   pitch_vel = asset.data.root_link_ang_vel_w[:, 1]
   
-  # Reward negative velocity (nose UP), penalize positive (nose DOWN)
-  # Clamp to prevent extreme rewards
-  return torch.clamp(-pitch_vel, min=0.0, max=10.0)
+  # Only reward rotation when in the air (above min_height)
+  height = asset.data.root_link_pos_w[:, 2]
+  in_air = (height > min_height).float()
+  
+  # Reward negative velocity (nose UP)
+  reward = torch.clamp(-pitch_vel, min=0.0, max=10.0)
+  
+  return reward * in_air
 
 
 def penalize_yaw_roll(
