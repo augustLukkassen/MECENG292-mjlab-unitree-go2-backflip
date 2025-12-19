@@ -269,7 +269,7 @@ def create_backflip_env_cfg(
     # 4. Encourage upward velocity during jump phase
     "vertical_velocity": RewardTermCfg(
       func=mdp.vertical_velocity,
-      weight=2.0,
+      weight=4.0,  # Increased! Need strong jump to reach 1.2m
       params={"command_name": "backflip"},
     ),
     # 3. Land upright (removed duplicate)

@@ -81,7 +81,7 @@ def track_phase_height(
   active = (phase < 0.8).float()
 
   base_height = 0.3
-  jump_height = 0.6  # Increased from 0.4 - more air time to complete flip!
+  jump_height = 0.9  # Even higher! Peak = 1.2m - force back legs to push
   target_height = base_height + jump_height * torch.sin(phase*math.pi) 
 
   actual = asset.data.root_link_pos_w[:, 2]
