@@ -265,7 +265,7 @@ def create_backflip_env_cfg(
       func=mdp.track_pitch_velocity,
       weight=5.0,  # Increased to encourage rotation
       params={
-        "target_velocity": -4.2,  # Backward rotation (try +4.2 if wrong direction)
+        "target_velocity": 4.2,  # POSITIVE = nose UP first (backflip)
         "std": 3.0,  # More forgiving - any rotation is good initially
         "command_name": "backflip",
         "axis": 1,  # World Y-axis = pitch
