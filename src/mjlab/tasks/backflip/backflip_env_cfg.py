@@ -265,7 +265,7 @@ def create_backflip_env_cfg(
     "pitch_velocity": RewardTermCfg(
       func=mdp.simple_pitch_velocity,
       weight=10.0,  # STRONGER - push through vertical!
-      params={"min_height": 0.55},  # Slightly earlier rotation
+      params={"min_height": 0.6},  # Back to 0.6m - don't rotate too early
     ),
     # 4. Penalize yaw and roll (wrong axes!)
     "penalize_yaw_roll": RewardTermCfg(
