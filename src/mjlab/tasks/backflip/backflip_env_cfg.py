@@ -279,6 +279,12 @@ def create_backflip_env_cfg(
       weight=10.0,  # STRONGEST JUMP!
       params={"command_name": "backflip"},
     ),
+    # 6. Asymmetric takeoff - front feet first to create rotation!
+    "asymmetric_takeoff": RewardTermCfg(
+      func=mdp.asymmetric_takeoff,
+      weight=5.0,  # Encourage front-first takeoff
+      params={"sensor_name": "feet_ground_contact", "command_name": "backflip"},
+    ),
     # 3. Land upright (removed duplicate)
     "landing_upright": RewardTermCfg(
       func=mdp.landing_upright,

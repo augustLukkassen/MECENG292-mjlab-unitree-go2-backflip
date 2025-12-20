@@ -231,6 +231,42 @@ def vertical_velocity(
   return torch.clamp(vert_vel, min=0.0, max=5.0) * jump_phase
 
 
+def asymmetric_takeoff(
+  env: ManagerBasedRlEnv,
+  sensor_name: str,
+  command_name: str,
+) -> torch.Tensor:
+  """Reward front feet lifting before back feet (creates rotation).
+  
+  For backflip: front feet should leave ground first while back feet
+  are still pushing. This creates the rotational momentum needed.
+  
+  Foot order in Go2: FR=0, FL=1, RR=2, RL=3
+  """
+  sensor: ContactSensor = env.scene[sensor_name]
+  command = env.command_manager.get_command(command_name)
+  assert command is not None
+  phase = command[:, 0]
+  
+  # Only during takeoff phase (early phase)
+  takeoff_phase = (phase < 0.3).float()
+  
+  # Get contact state: found > 0 means in contact
+  contact = sensor.data.found  # [B, 4] - FR, FL, RR, RL
+  assert contact is not None
+  
+  # Front feet: indices 0, 1 (FR, FL)
+  # Back feet: indices 2, 3 (RR, RL)
+  front_in_air = (contact[:, 0] == 0).float() + (contact[:, 1] == 0).float()  # 0-2
+  back_in_contact = (contact[:, 2] > 0).float() + (contact[:, 3] > 0).float()  # 0-2
+  
+  # Reward: front feet in air while back feet still pushing
+  # Max reward when both front feet up AND both back feet down
+  reward = front_in_air * back_in_contact  # 0-4
+  
+  return reward * takeoff_phase
+
+
 def penalize_yaw_roll(
   env: ManagerBasedRlEnv,
   pitch_axis: int = 1,  # Which axis is the backflip axis (exclude from penalty)
