@@ -268,7 +268,7 @@ def create_backflip_env_cfg(
     ),
     "vertical_velocity": RewardTermCfg(
       func=mdp.vertical_velocity,
-      weight=5.0,
+      weight=10.0,
       params={"command_name": "backflip"},
     ),
     "landing_upright": RewardTermCfg(
