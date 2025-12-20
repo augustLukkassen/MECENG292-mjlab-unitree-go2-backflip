@@ -247,36 +247,36 @@ def create_backflip_env_cfg(
     # Hint: track commanded linear and angular velocity.
  
     # BACKFLIP REWARDS:
-    # 1. Jump up HIGH - CRITICAL!
+    # 1. Jump up HIGH
     "track_phase_height": RewardTermCfg(
       func=mdp.track_phase_height,
-      weight=4.0,  # Doubled! Must reach height
+      weight=2.0,
       params={"std": 0.15,
               "command_name": "backflip"},  
     ),
-    # 2. Track rotation - light guidance
+    # 2. Track rotation - REDUCED to avoid oscillation
     "track_phase_pitch": RewardTermCfg(
       func=mdp.track_phase_pitch,
-      weight=2.0,
+      weight=2.0,  # Light guidance only
       params={"std": 0.5,
               "command_name": "backflip"},
     ),
-    # 3. Pitch velocity - keep rotating
+    # 3. Pitch velocity - ONLY after jumping HIGH
     "pitch_velocity": RewardTermCfg(
       func=mdp.simple_pitch_velocity,
-      weight=8.0,
-      params={"min_height": 0.6},
+      weight=8.0,  # Strong rotation
+      params={"min_height": 0.6},  # Must be 0.6m+ before rotation reward!
     ),
-    # 4. Penalize yaw and roll
+    # 4. Penalize yaw and roll (wrong axes!)
     "penalize_yaw_roll": RewardTermCfg(
       func=mdp.penalize_yaw_roll,
-      weight=-2.0,
+      weight=-2.0,  # Reduced slightly
       params={"pitch_axis": 1},
     ),
-    # 5. JUMP HIGH! Back legs need clearance!
+    # 5. STRONG upward velocity - JUMP HIGH!
     "vertical_velocity": RewardTermCfg(
       func=mdp.vertical_velocity,
-      weight=12.0,  # Even stronger jump!
+      weight=10.0,  # STRONGEST JUMP!
       params={"command_name": "backflip"},
     ),
     # 3. Land upright (removed duplicate)

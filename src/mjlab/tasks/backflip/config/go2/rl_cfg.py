@@ -32,5 +32,5 @@ UNITREE_GO2_PPO_CFG = RslRlOnPolicyRunnerCfg(
   experiment_name="go2_backflip",
   save_interval=50,
   num_steps_per_env=24,
-  max_iterations=600,  # More time to learn the flip!
+  max_iterations=800,  # Even more time to complete the flip!
 )
