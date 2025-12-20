@@ -254,12 +254,12 @@ def create_backflip_env_cfg(
     "track_phase_pitch": RewardTermCfg(
       func=mdp.track_phase_pitch,
       weight=2.0,
-      params={"std": 0.5, "command_name": "backflip"},
+      params={"std": 0.3, "command_name": "backflip"},
     ),
     "pitch_velocity": RewardTermCfg(
       func=mdp.simple_pitch_velocity,
       weight=8.0,
-      params={"min_height": 0.7},
+      params={"min_height": 0.6},
     ),
     "penalize_yaw_roll": RewardTermCfg(
       func=mdp.penalize_yaw_roll,
@@ -268,7 +268,7 @@ def create_backflip_env_cfg(
     ),
     "vertical_velocity": RewardTermCfg(
       func=mdp.vertical_velocity,
-      weight=10.0,
+      weight=5.0,
       params={"command_name": "backflip"},
     ),
     "landing_upright": RewardTermCfg(

@@ -231,41 +231,6 @@ def vertical_velocity(
   return torch.clamp(vert_vel, min=0.0, max=5.0) * jump_phase
 
 
-def tuck_legs(
-  env: ManagerBasedRlEnv,
-  command_name: str,
-  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
-) -> torch.Tensor:
-  """Reward tucking legs when airborne.
-  
-  Go2 calf joint range: -2.72 (fully bent) to -0.84 (extended)
-  More negative = more tucked. We reward absolute tucking amount.
-  """
-  asset: Entity = env.scene[asset_cfg.name]
-  command = env.command_manager.get_command(command_name)
-  assert command is not None
-  phase = command[:, 0]
-  
-  # Only when airborne (height > 0.35m) and during flip (phase 0.1-0.8)
-  base_height = asset.data.root_link_pos_w[:, 2]
-  airborne = (base_height > 0.35).float()
-  in_flip = ((phase > 0.1) & (phase < 0.8)).float()
-  
-  joint_pos = asset.data.joint_pos  # [B, 12]
-  
-  # Calf joints: FR=2, FL=5, RR=8, RL=11
-  # Range: -2.72 to -0.84. Negate so more bent = higher value.
-  tuck_amount = torch.zeros(joint_pos.shape[0], device=joint_pos.device)
-  for idx in [2, 5, 8, 11]:
-    tuck_amount += -joint_pos[:, idx]  # -(-2.0) = 2.0 reward
-  
-  # Normalize: range is ~0.84 to 2.72, so tuck_amount is ~3.4 to 10.9
-  # Subtract baseline (extended legs = 0.84*4 = 3.36) so reward starts at 0
-  tuck_amount = torch.clamp(tuck_amount - 3.36, min=0.0, max=8.0)
-  
-  return tuck_amount * airborne * in_flip
-
-
 def penalize_yaw_roll(
   env: ManagerBasedRlEnv,
   pitch_axis: int = 1,  # Which axis is the backflip axis (exclude from penalty)
