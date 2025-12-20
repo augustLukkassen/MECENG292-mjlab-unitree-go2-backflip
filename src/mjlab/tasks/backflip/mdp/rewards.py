@@ -302,9 +302,13 @@ def inverted_bonus(
   command_name: str,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-  """Reward for being inverted (upside down) during mid-phase.
+  """Reward for progress toward inverted during mid-phase.
   
-  Projected gravity Z > 0 means robot is inverted.
+  Projected gravity Z: -1 (upright) -> 0 (vertical) -> +1 (inverted)
+  We reward (grav_z + 1) / 2 which gives:
+    - Upright: 0.0
+    - Vertical: 0.5  
+    - Inverted: 1.0
   Only active during phase 0.3-0.7 (mid-flip).
   """
   asset: Entity = env.scene[asset_cfg.name]
@@ -312,16 +316,16 @@ def inverted_bonus(
   assert command is not None
   phase = command[:, 0]
   
-  # Only during mid-phase (when robot should be inverted)
+  # Only during mid-phase
   mid_phase = ((phase > 0.3) & (phase < 0.7)).float()
   
-  # Projected gravity Z: negative when upright, positive when inverted
+  # Projected gravity Z: -1 upright, 0 vertical, +1 inverted
   grav_z = asset.data.projected_gravity_b[:, 2]
   
-  # Reward being inverted (grav_z > 0)
-  inverted = torch.clamp(grav_z, min=0.0, max=1.0)
+  # Smooth reward: 0 at upright, 0.5 at vertical, 1.0 at inverted
+  progress = (grav_z + 1.0) / 2.0
   
-  return inverted * mid_phase
+  return progress * mid_phase
 
 
 def default_joint_position(
