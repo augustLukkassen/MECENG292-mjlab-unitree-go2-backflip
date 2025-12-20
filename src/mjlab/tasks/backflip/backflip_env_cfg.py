@@ -329,5 +329,5 @@ def create_backflip_env_cfg(
     sim=SIM_CFG,
     viewer=viewer,
     decimation=4,
-    episode_length_s=3.0,
+    episode_length_s=1.5,
   )
