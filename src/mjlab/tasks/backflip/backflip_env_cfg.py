@@ -126,7 +126,7 @@ def create_backflip_env_cfg(
   commands: dict[str, CommandTermCfg] = {
     "backflip": BackflipCommandCfg(
         asset_name="robot",
-        phase_duration = 1.5,  # Keep original timing
+        phase_duration = 1.0,
     )
 }
 
