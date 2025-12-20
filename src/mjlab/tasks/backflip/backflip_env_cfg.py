@@ -271,9 +271,9 @@ def create_backflip_env_cfg(
       weight=10.0,
       params={"command_name": "backflip"},
     ),
-    "takeoff_impulse": RewardTermCfg(
-      func=mdp.takeoff_impulse,
-      weight=5.0,
+    "inverted_bonus": RewardTermCfg(
+      func=mdp.inverted_bonus,
+      weight=10.0,
       params={"command_name": "backflip"},
     ),
     "landing_upright": RewardTermCfg(

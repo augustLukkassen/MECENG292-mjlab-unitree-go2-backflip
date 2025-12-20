@@ -297,6 +297,33 @@ def takeoff_impulse(
   return (upward_vel + backward_pitch + combo_bonus) * early_phase
 
 
+def inverted_bonus(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Reward for being inverted (upside down) during mid-phase.
+  
+  Projected gravity Z > 0 means robot is inverted.
+  Only active during phase 0.3-0.7 (mid-flip).
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  command = env.command_manager.get_command(command_name)
+  assert command is not None
+  phase = command[:, 0]
+  
+  # Only during mid-phase (when robot should be inverted)
+  mid_phase = ((phase > 0.3) & (phase < 0.7)).float()
+  
+  # Projected gravity Z: negative when upright, positive when inverted
+  grav_z = asset.data.projected_gravity_b[:, 2]
+  
+  # Reward being inverted (grav_z > 0)
+  inverted = torch.clamp(grav_z, min=0.0, max=1.0)
+  
+  return inverted * mid_phase
+
+
 def default_joint_position(
   env,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
