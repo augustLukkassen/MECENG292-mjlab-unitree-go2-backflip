@@ -276,7 +276,7 @@ def create_backflip_env_cfg(
     # 5. TUCK LEGS during mid-flip (spin faster!)
     "tuck_legs": RewardTermCfg(
       func=mdp.tuck_legs,
-      weight=3.0,  # Encourage tucking
+      weight=5.0,  # Strong encouragement to tuck
       params={"command_name": "backflip"},
     ),
     # 6. STRONG upward velocity - JUMP HIGH!
