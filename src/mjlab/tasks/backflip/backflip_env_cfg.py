@@ -254,18 +254,18 @@ def create_backflip_env_cfg(
       params={"std": 0.15,
               "command_name": "backflip"},  
     ),
-    # 2. Track rotation - REDUCED to avoid oscillation
+    # 2. Track rotation - STRONGER to force through vertical
     "track_phase_pitch": RewardTermCfg(
       func=mdp.track_phase_pitch,
-      weight=2.0,  # Light guidance only
+      weight=4.0,  # Increased! Force rotation through vertical
       params={"std": 0.5,
               "command_name": "backflip"},
     ),
-    # 3. Pitch velocity - ONLY after jumping HIGH
+    # 3. Pitch velocity - slightly lower height gate
     "pitch_velocity": RewardTermCfg(
       func=mdp.simple_pitch_velocity,
-      weight=8.0,  # Strong rotation
-      params={"min_height": 0.6},  # Must be 0.6m+ before rotation reward!
+      weight=8.0,
+      params={"min_height": 0.5},  # Lowered to 0.5m
     ),
     # 4. Penalize yaw and roll (wrong axes!)
     "penalize_yaw_roll": RewardTermCfg(
@@ -278,12 +278,6 @@ def create_backflip_env_cfg(
       func=mdp.vertical_velocity,
       weight=10.0,  # STRONGEST JUMP!
       params={"command_name": "backflip"},
-    ),
-    # 6. Asymmetric takeoff - front feet first to create rotation!
-    "asymmetric_takeoff": RewardTermCfg(
-      func=mdp.asymmetric_takeoff,
-      weight=5.0,  # Encourage front-first takeoff
-      params={"sensor_name": "feet_ground_contact", "command_name": "backflip"},
     ),
     # 3. Land upright (removed duplicate)
     "landing_upright": RewardTermCfg(
