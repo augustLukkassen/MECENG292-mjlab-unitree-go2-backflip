@@ -126,7 +126,7 @@ def create_backflip_env_cfg(
   commands: dict[str, CommandTermCfg] = {
     "backflip": BackflipCommandCfg(
         asset_name="robot",
-        phase_duration = 1.0,
+        phase_duration = 1.5,  # Keep original timing
     )
 }
 
@@ -253,8 +253,8 @@ def create_backflip_env_cfg(
     ),
     "track_phase_pitch": RewardTermCfg(
       func=mdp.track_phase_pitch,
-      weight=4.0,
-      params={"std": 0.3, "command_name": "backflip"},
+      weight=2.0,
+      params={"std": 0.5, "command_name": "backflip"},
     ),
     "pitch_velocity": RewardTermCfg(
       func=mdp.simple_pitch_velocity,
