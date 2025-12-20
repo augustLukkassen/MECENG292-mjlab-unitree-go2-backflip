@@ -276,6 +276,11 @@ def create_backflip_env_cfg(
       weight=10.0,
       params={"command_name": "backflip"},
     ),
+    "legs_forward": RewardTermCfg(
+      func=mdp.legs_forward,
+      weight=5.0,
+      params={"min_height": 0.4},
+    ),
     "landing_upright": RewardTermCfg(
       func=mdp.landing_upright,
       weight=2.0,

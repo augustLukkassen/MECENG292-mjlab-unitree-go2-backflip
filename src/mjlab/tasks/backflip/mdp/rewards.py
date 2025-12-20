@@ -322,6 +322,38 @@ def inverted_bonus(
   return progress
 
 
+def legs_forward(
+  env: ManagerBasedRlEnv,
+  min_height: float = 0.4,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Reward swinging legs forward when airborne.
+  
+  For backflip, legs should swing forward (positive thigh velocity) 
+  to help carry the rotation. Only rewards when above min_height.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  
+  # Height gate - only when airborne
+  height = asset.data.root_link_pos_w[:, 2]
+  airborne = (height > min_height).float()
+  
+  # Get thigh joint velocities (indices for thigh joints)
+  # Thigh joints: FR_thigh, FL_thigh, RR_thigh, RL_thigh
+  joint_vel = asset.data.joint_vel  # [B, num_joints]
+  
+  # Find thigh joint indices (typically indices 1, 4, 7, 10 for quadrupeds)
+  # We want positive velocity = legs swinging forward
+  # Sum all thigh velocities and reward positive values
+  thigh_indices = [1, 4, 7, 10]  # FR, FL, RR, RL thigh joints
+  thigh_vel = joint_vel[:, thigh_indices].mean(dim=1)
+  
+  # Reward positive velocity (legs forward), clamped
+  forward_reward = torch.clamp(thigh_vel, min=0.0, max=5.0)
+  
+  return forward_reward * airborne
+
+
 def default_joint_position(
   env,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
