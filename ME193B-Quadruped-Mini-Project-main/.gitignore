@@ -1,0 +1,15 @@
+wandb/
+logs/
+onnx/
+videos/
+__pycache__/
+MUJOCO_LOG.TXT
+debug.py
+.vscode/
+*.ipynb_checkpoints/
+motions/
+*_rerun*
+*.mp4
+artifacts/
+.venv/
+render_robots.py

@@ -60,34 +60,42 @@ def track_angular_velocity(
   ang_vel_error = z_error + xy_error
   return torch.exp(-ang_vel_error / std**2)
 
+def phase_progress(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+) -> torch.Tensor:
+  """Reward for advancing the phase.
+  
+  KEY INSIGHT: Since phase is now ROTATION-BASED, this directly
+  rewards the robot for actually rotating! No more reward hacking.
+  """
+  command = env.command_manager.get_command(command_name)
+  assert command is not None, f"Command '{command_name}' not found."
+  phase = command[:, 0]
+  return phase  # Directly reward phase advancement
+
+
 def track_phase_height(
   env: ManagerBasedRlEnv,
   std: float,
   command_name: str,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-  """Reward for tracking the commanded base height.
+  """Reward for tracking the commanded target height from the command.
   
-  Only active during phase 0-0.8 (jump and flip).
-  Disabled during phase 0.8-1.0 to avoid rewarding standing still.
+  The command now provides target_height in command[:, 1].
   """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
   assert command is not None, f"Command '{command_name}' not found."
 
-  phase = command[:, 0]
-
-  # Only active during first 80% of phase
-  active = (phase < 0.8).float()
-
-  base_height = 0.3
-  jump_height = 1.0  # Peak = 1.3m - more air time to complete flip!
-  target_height = base_height + jump_height * torch.sin(phase*math.pi) 
+  # Target height from command generator
+  target_height = command[:, 1]
 
   actual = asset.data.root_link_pos_w[:, 2]
   height_error = torch.square(actual - target_height)
 
-  return torch.exp(-height_error / std**2) * active
+  return torch.exp(-height_error / std**2)
 
 def track_phase_pitch(
   env: ManagerBasedRlEnv,
@@ -187,26 +195,48 @@ def track_pitch_velocity(
   return phase_weight * reward
 
 
+def track_target_pitch_vel(
+  env: ManagerBasedRlEnv,
+  std: float,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Reward for matching the commanded pitch velocity.
+  
+  Uses BODY-FRAME angular velocity Y-axis (pitch).
+  The command provides target pitch velocity in command[:, 3].
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  command = env.command_manager.get_command(command_name)
+  assert command is not None, f"Command '{command_name}' not found."
+  
+  # Target pitch velocity from command
+  target_pitch_vel = command[:, 3]
+  
+  # Actual body-frame Y angular velocity
+  actual_pitch_vel = asset.data.root_link_ang_vel_b[:, 1]
+  
+  error = torch.square(actual_pitch_vel - target_pitch_vel)
+  return torch.exp(-error / std**2)
+
+
 def simple_pitch_velocity(
   env: ManagerBasedRlEnv,
-  min_height: float = 0.5,  # Must be airborne to get rotation reward!
+  min_height: float = 0.5,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Reward negative Y angular velocity (nose UP for backflip).
   
-  Only rewards rotation when robot is above min_height (must jump first!).
-  This prevents the robot from just tipping over on the ground.
+  Only rewards rotation when robot is above min_height.
   """
   asset: Entity = env.scene[asset_cfg.name]
   
-  # Height gate - must be airborne to get rotation reward
   height = asset.data.root_link_pos_w[:, 2]
   height_gate = (height > min_height).float()
   
-  # World Y angular velocity - negative = nose UP
-  pitch_vel = asset.data.root_link_ang_vel_w[:, 1]
+  # Body Y angular velocity - negative = nose UP
+  pitch_vel = asset.data.root_link_ang_vel_b[:, 1]
   
-  # Reward negative velocity (nose UP), only when airborne
   return torch.clamp(-pitch_vel, min=0.0, max=10.0) * height_gate
 
 

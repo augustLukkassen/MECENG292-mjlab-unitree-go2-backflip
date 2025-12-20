@@ -126,9 +126,12 @@ def create_backflip_env_cfg(
   commands: dict[str, CommandTermCfg] = {
     "backflip": BackflipCommandCfg(
         asset_name="robot",
-        phase_duration = 1.5,  # Keep original timing
+        flip_duration=1.0,
+        standing_height=0.35,
+        peak_height=0.85,
+        crouch_depth=0.1,
     )
-}
+  }
 
 
   # ---------------------------------------------------------------------------
@@ -243,23 +246,21 @@ def create_backflip_env_cfg(
     # -------------------------------------------------------------------------
     # Part2 (c) Writing objectives (main task objectives)
     # -------------------------------------------------------------------------
-    # TODO(c): add objective reward terms.
-    # Hint: track commanded linear and angular velocity.
- 
+    # KEY: phase_progress directly rewards rotation (since phase is rotation-based)
+    "phase_progress": RewardTermCfg(
+      func=mdp.phase_progress,
+      weight=15.0,
+      params={"command_name": "backflip"},
+    ),
     "track_phase_height": RewardTermCfg(
       func=mdp.track_phase_height,
-      weight=2.0,
+      weight=5.0,
       params={"std": 0.15, "command_name": "backflip"},  
     ),
-    "track_phase_pitch": RewardTermCfg(
-      func=mdp.track_phase_pitch,
-      weight=2.0,
-      params={"std": 0.5, "command_name": "backflip"},
-    ),
-    "pitch_velocity": RewardTermCfg(
-      func=mdp.simple_pitch_velocity,
+    "track_pitch_velocity": RewardTermCfg(
+      func=mdp.track_target_pitch_vel,
       weight=8.0,
-      params={"min_height": 0.6},
+      params={"std": 2.0, "command_name": "backflip"},
     ),
     "penalize_yaw_roll": RewardTermCfg(
       func=mdp.penalize_yaw_roll,
@@ -276,10 +277,6 @@ def create_backflip_env_cfg(
       weight=2.0,
       params={"std": math.sqrt(0.2), "command_name": "backflip"},  
     ),
-
-    # To prevent reaching physical limits and encourage smooth actions, consider adding terms such as:
-    # 3. penalizing norm of action rate
-    # 4. penalizing reaching the joint position limits
     "action_rate": RewardTermCfg(
       func=mdp.action_rate_l2,
       weight=-0.1,
