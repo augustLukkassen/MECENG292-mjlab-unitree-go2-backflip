@@ -231,6 +231,43 @@ def vertical_velocity(
   return torch.clamp(vert_vel, min=0.0, max=5.0) * jump_phase
 
 
+def tuck_legs(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Reward tucking legs during mid-flip (phase 0.2-0.7).
+  
+  Tucking = bending knees (calf joints). This reduces moment of inertia
+  and makes the robot spin faster - just like a real backflip!
+  
+  Go2 calf joints: negative values = bent/tucked
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  command = env.command_manager.get_command(command_name)
+  assert command is not None
+  phase = command[:, 0]
+  
+  # Only during mid-flip (not takeoff or landing)
+  mid_flip = ((phase > 0.2) & (phase < 0.7)).float()
+  
+  # Get calf joint positions (indices 2, 5, 8, 11 for Go2)
+  # More negative = more bent/tucked
+  joint_pos = asset.data.joint_pos
+  
+  # Sum of how tucked all 4 legs are (more negative = more tucked)
+  # Calf joints for Go2: FR_calf=2, FL_calf=5, RR_calf=8, RL_calf=11
+  calf_indices = [2, 5, 8, 11]
+  tuck_amount = torch.zeros(joint_pos.shape[0], device=joint_pos.device)
+  for idx in calf_indices:
+    tuck_amount += -joint_pos[:, idx]  # Negative = bent, so negate to reward
+  
+  # Clamp to reasonable range
+  tuck_amount = torch.clamp(tuck_amount, min=0.0, max=8.0)
+  
+  return tuck_amount * mid_flip
+
+
 def penalize_yaw_roll(
   env: ManagerBasedRlEnv,
   pitch_axis: int = 1,  # Which axis is the backflip axis (exclude from penalty)

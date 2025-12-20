@@ -273,7 +273,13 @@ def create_backflip_env_cfg(
       weight=-2.0,  # Reduced slightly
       params={"pitch_axis": 1},
     ),
-    # 5. STRONG upward velocity - JUMP HIGH!
+    # 5. TUCK LEGS during mid-flip (spin faster!)
+    "tuck_legs": RewardTermCfg(
+      func=mdp.tuck_legs,
+      weight=3.0,  # Encourage tucking
+      params={"command_name": "backflip"},
+    ),
+    # 6. STRONG upward velocity - JUMP HIGH!
     "vertical_velocity": RewardTermCfg(
       func=mdp.vertical_velocity,
       weight=10.0,  # STRONGEST JUMP!
