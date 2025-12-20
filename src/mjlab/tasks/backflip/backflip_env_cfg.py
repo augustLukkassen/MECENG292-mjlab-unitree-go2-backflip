@@ -253,7 +253,7 @@ def create_backflip_env_cfg(
     ),
     "track_phase_pitch": RewardTermCfg(
       func=mdp.track_phase_pitch,
-      weight=2.0,
+      weight=4.0,
       params={"std": 0.3, "command_name": "backflip"},
     ),
     "pitch_velocity": RewardTermCfg(
