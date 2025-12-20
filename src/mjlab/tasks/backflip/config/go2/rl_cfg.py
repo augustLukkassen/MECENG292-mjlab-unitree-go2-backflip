@@ -32,5 +32,5 @@ UNITREE_GO2_PPO_CFG = RslRlOnPolicyRunnerCfg(
   experiment_name="go2_backflip",
   save_interval=50,
   num_steps_per_env=24,
-  max_iterations=500,
+  max_iterations=1000,
 )

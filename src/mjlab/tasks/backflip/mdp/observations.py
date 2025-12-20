@@ -116,10 +116,10 @@ def generated_commands(env: ManagerBasedRlEnv, command_name: str) -> torch.Tenso
 
 
 def generated_phase(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
-  """Return the full backflip command [phase, target_height, target_pitch, target_pitch_vel]."""
+  """Return the phase from the backflip command."""
   command = env.command_manager.get_command(command_name)
   assert command is not None
-  return command  # Now returns all 4 elements  
+  return command  
 
 
 ##

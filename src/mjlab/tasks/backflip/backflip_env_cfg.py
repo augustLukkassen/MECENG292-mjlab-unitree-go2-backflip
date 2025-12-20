@@ -126,12 +126,9 @@ def create_backflip_env_cfg(
   commands: dict[str, CommandTermCfg] = {
     "backflip": BackflipCommandCfg(
         asset_name="robot",
-        flip_duration=1.0,
-        standing_height=0.35,
-        peak_height=0.85,
-        crouch_depth=0.1,
+        phase_duration = 1.5,  # Keep original timing
     )
-  }
+}
 
 
   # ---------------------------------------------------------------------------
@@ -246,21 +243,23 @@ def create_backflip_env_cfg(
     # -------------------------------------------------------------------------
     # Part2 (c) Writing objectives (main task objectives)
     # -------------------------------------------------------------------------
-    # KEY: phase_progress directly rewards rotation (since phase is rotation-based)
-    "phase_progress": RewardTermCfg(
-      func=mdp.phase_progress,
-      weight=15.0,
-      params={"command_name": "backflip"},
-    ),
+    # TODO(c): add objective reward terms.
+    # Hint: track commanded linear and angular velocity.
+ 
     "track_phase_height": RewardTermCfg(
       func=mdp.track_phase_height,
-      weight=5.0,
+      weight=2.0,
       params={"std": 0.15, "command_name": "backflip"},  
     ),
-    "track_pitch_velocity": RewardTermCfg(
-      func=mdp.track_target_pitch_vel,
+    "track_phase_pitch": RewardTermCfg(
+      func=mdp.track_phase_pitch,
+      weight=2.0,
+      params={"std": 0.5, "command_name": "backflip"},
+    ),
+    "pitch_velocity": RewardTermCfg(
+      func=mdp.simple_pitch_velocity,
       weight=8.0,
-      params={"std": 2.0, "command_name": "backflip"},
+      params={"min_height": 0.6},
     ),
     "penalize_yaw_roll": RewardTermCfg(
       func=mdp.penalize_yaw_roll,
@@ -272,11 +271,20 @@ def create_backflip_env_cfg(
       weight=10.0,
       params={"command_name": "backflip"},
     ),
+    "takeoff_impulse": RewardTermCfg(
+      func=mdp.takeoff_impulse,
+      weight=5.0,
+      params={"command_name": "backflip"},
+    ),
     "landing_upright": RewardTermCfg(
       func=mdp.landing_upright,
       weight=2.0,
       params={"std": math.sqrt(0.2), "command_name": "backflip"},  
     ),
+
+    # To prevent reaching physical limits and encourage smooth actions, consider adding terms such as:
+    # 3. penalizing norm of action rate
+    # 4. penalizing reaching the joint position limits
     "action_rate": RewardTermCfg(
       func=mdp.action_rate_l2,
       weight=-0.1,
