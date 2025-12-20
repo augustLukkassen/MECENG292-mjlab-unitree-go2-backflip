@@ -236,43 +236,33 @@ def tuck_legs(
   command_name: str,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-  """Reward tucking legs during mid-flip.
+  """Reward tucking legs when airborne.
   
-  Tucking = bending knees (calf joints). This reduces moment of inertia
-  and makes the robot spin faster - just like a real backflip!
-  
-  Go2 joints per leg: hip, thigh, calf (3 per leg, 12 total)
-  Calf joint range: -2.72 (fully bent) to -0.84 (extended)
-  Default: -1.8
-  
-  We reward going MORE bent than default (below -1.8).
+  Go2 calf joint range: -2.72 (fully bent) to -0.84 (extended)
+  More negative = more tucked. We reward absolute tucking amount.
   """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
   assert command is not None
   phase = command[:, 0]
   
-  # Only when airborne (base height > 0.4m) and during flip (phase 0.1-0.8)
+  # Only when airborne (height > 0.35m) and during flip (phase 0.1-0.8)
   base_height = asset.data.root_link_pos_w[:, 2]
-  airborne = (base_height > 0.4).float()
+  airborne = (base_height > 0.35).float()
   in_flip = ((phase > 0.1) & (phase < 0.8)).float()
   
-  # Get ALL joint positions
   joint_pos = asset.data.joint_pos  # [B, 12]
   
-  # Calf joints are every 3rd joint starting at index 2
-  # FR_calf=2, FL_calf=5, RR_calf=8, RL_calf=11
-  # Default value is -1.8. More negative = more tucked.
-  # Reward: how much MORE bent than default (-1.8)
-  default_calf = -1.8
-  
+  # Calf joints: FR=2, FL=5, RR=8, RL=11
+  # Range: -2.72 to -0.84. Negate so more bent = higher value.
   tuck_amount = torch.zeros(joint_pos.shape[0], device=joint_pos.device)
   for idx in [2, 5, 8, 11]:
-    # How much more bent than default? (negative = more bent)
-    extra_bend = default_calf - joint_pos[:, idx]  # positive if more bent
-    tuck_amount += torch.clamp(extra_bend, min=0.0, max=1.0)
+    tuck_amount += -joint_pos[:, idx]  # -(-2.0) = 2.0 reward
   
-  # Scale: max 4.0 if all legs fully tucked beyond default
+  # Normalize: range is ~0.84 to 2.72, so tuck_amount is ~3.4 to 10.9
+  # Subtract baseline (extended legs = 0.84*4 = 3.36) so reward starts at 0
+  tuck_amount = torch.clamp(tuck_amount - 3.36, min=0.0, max=8.0)
+  
   return tuck_amount * airborne * in_flip
 
 
